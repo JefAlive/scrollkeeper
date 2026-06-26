@@ -1,38 +1,46 @@
 #!/usr/bin/env bash
 
-# Resolve os caminhos absolutos do projeto
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 LOCAL_HERMES_HOME="$SCRIPT_DIR/.hermes"
 
-# Garante que a pasta local do perfil existe
 mkdir -p "$LOCAL_HERMES_HOME/profiles/planner"
 touch "$LOCAL_HERMES_HOME/profiles/planner/SOUL.md"
 
-# Auto-inicializa o arquivo de configuração local se ele não existir
 if [ ! -f "$LOCAL_HERMES_HOME/profiles/planner/config.yaml" ]; then
     cat << 'EOF' > "$LOCAL_HERMES_HOME/profiles/planner/config.yaml"
 model:
-  default: "local/llama-model"
-providers:
-  local:
-    type: openai
-    base_url: "http://127.0.0.1:8000/v1"
-    api_key: "local"
+  default: "llama-model"
+  provider: "custom"
+  base_url: "http://127.0.0.1:8000/v1"
+  api_key: "local"
 EOF
 fi
 
-# Carrega variáveis de ambiente adicionais, se houverem
 if [ -f "$SCRIPT_DIR/env/planner.env" ]; then
     export $(grep -v '^#' "$SCRIPT_DIR/env/planner.env" | xargs)
 fi
 
-# Executa o Bubblewrap
+PYTHON_REAL_PATH=$(readlink -f "$HOME/.hermes/hermes-agent/venv/bin/python3" 2>/dev/null)
+EXTRA_BINDS=()
+
+if [[ "$PYTHON_REAL_PATH" == "$HOME/"* ]]; then
+    RELATIVE_PATH="${PYTHON_REAL_PATH#$HOME/}"
+    TOOL_DIR="${RELATIVE_PATH%%/*}"
+    PYTHON_HOME_TOOL="$HOME/$TOOL_DIR"
+    
+    if [ -d "$PYTHON_HOME_TOOL" ]; then
+        EXTRA_BINDS+=(--ro-bind "$PYTHON_HOME_TOOL" "$PYTHON_HOME_TOOL")
+    fi
+fi
+
+# Executa o Bubblewrap para um ambiente hermes isolado
 bwrap \
   --ro-bind /usr /usr \
-  --ro-bind /bin /bin \
-  --ro-bind /lib /lib \
-  --ro-bind /lib64 /lib64 \
+  --symlink /usr/bin /bin \
+  --symlink /usr/sbin /sbin \
+  --symlink /usr/lib /lib \
+  --symlink /usr/lib64 /lib64 \
   --ro-bind /etc /etc \
   --ro-bind /var /var \
   --proc /proc \
@@ -41,15 +49,19 @@ bwrap \
   --unshare-pid \
   --unshare-ipc \
   --unshare-uts \
+  --ro-bind-try "$HOME/.nvm" "$HOME/.nvm" \
+  --ro-bind-try "$HOME/.cargo" "$HOME/.cargo" \
   --ro-bind "$HOME/.hermes" "$HOME/.hermes" \
   --ro-bind "$HOME/.local/bin" "$HOME/.local/bin" \
+  "${EXTRA_BINDS[@]}" \
   --bind "$LOCAL_HERMES_HOME" "$HOME/.hermes_project" \
   --ro-bind "$PROJECT_ROOT" "$PROJECT_ROOT" \
-  --ro-bind "$PROJECT_ROOT/hermes/profiles/planner.md" "$HOME/.hermes_project/profiles/planner/SOUL.md" \
+  --ro-bind "$PROJECT_ROOT/hermes/profiles/planner/SOUL.md" "$HOME/.hermes_project/profiles/planner/SOUL.md" \
   --bind "$PROJECT_ROOT/hermes/tasks" "$PROJECT_ROOT/hermes/tasks" \
   --bind "$PROJECT_ROOT/hermes/epics" "$PROJECT_ROOT/hermes/epics" \
   --bind "$PROJECT_ROOT/hermes/memory" "$PROJECT_ROOT/hermes/memory" \
   --setenv HOME "$HOME" \
   --setenv HERMES_HOME "$HOME/.hermes_project" \
+  --setenv PATH "$PATH" \
   --chdir "$PROJECT_ROOT" \
   "$HOME/.local/bin/hermes" -p planner chat "$@"
