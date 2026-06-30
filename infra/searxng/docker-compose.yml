@@ -1,0 +1,16 @@
+# infra/searxng/docker-compose.yml
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8888:8080" # Expõe o SearXNG na porta 8888 da sua máquina
+    volumes:
+      - ./searxng-config:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8888/
+      - SEARXNG_SECRET=digite_algum_segredo_aleatorio_aqui # Pode ser qualquer texto longo
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1

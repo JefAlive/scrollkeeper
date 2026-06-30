@@ -46,16 +46,21 @@ Vault Obsidian
     │   │
     │   ├── .hermes/               🤖 Diretório criado automaticamente pelo Hermes
     │   |
-    │   └── bubblewrap/            🔐 Isolamento real de execução (sandbox)
-    │       │
-    │       │
-    │       ├── planner.sh         🧭 Hermes planner
-    │       ├── researcher.sh      🔍 Hermes researcher
-    │       │
-    │       └── env/
-    │           ├── planner.env    ⚙️ Config de ambiente do planner
-    │           ├── coder.env      ⚙️ Config de ambiente do coder
-    │           └── reviewer.env   ⚙️ Config de ambiente do reviewer
+    │   ├── bubblewrap/            🔐 Isolamento real de execução (sandbox)
+    │   |   │
+    │   |   │
+    │   |   ├── planner.sh         🧭 Hermes planner
+    │   |   ├── researcher.sh      🔍 Hermes researcher
+    │   |   │
+    │   |   └── env/
+    │   |       ├── planner.env    ⚙️ Config de ambiente do planner
+    │   |       ├── coder.env      ⚙️ Config de ambiente do coder
+    │   |       └── reviewer.env   ⚙️ Config de ambiente do reviewer
+    |   |
+    │   └── searxng/               🔍 Instância local do mecanismo de busca anônimo
+    |       ├── docker-compose.yml
+    |       └── searxng-config/
+    |           └── settings.yml   ⚙️ Ajustes do SearXNG (JSON habilitado)
     │
     └── research/                  📄 Relatórios das pesquisas realizadas
 ```
